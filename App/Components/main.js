@@ -108,9 +108,6 @@ componentDidMount(){
   });
 }
 
-
-
-
 AddNewContact=()=>{
   this.ref.add({
 
