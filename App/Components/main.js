@@ -1,105 +1,138 @@
+/**
+ * Sample React Native App
+ * https://github.com/facebook/react-native
+ * @flow
+ */
+
 import React, { Component } from 'react';
-import { connect } from 'react-redux';
+import { createStore } from 'redux';
 import {
+  ActivityIndicator,
+  FlatList,
+  TextInput,
+  Dimensions,
+  Button,
   AppRegistry,
   StyleSheet,
   Text,
-  TextInput,
   View,
   ListView,
   Navigator,
   TouchableOpacity
 } from 'react-native';
+
 import NavigationBar from 'react-native-navbar';
 import { SET_ACTIVE_CONTACT, UPDATE_SEARCH } from './../../actionTypes';
+import firebase from 'react-native-firebase';
 
-class Main extends Component {
+const { width, height } = Dimensions.get('window');
 
+export default class main extends Component {
   constructor(props) {
     super(props);
-
+    this.ref = firebase.firestore().collection('users');
+    
+    this.state = {
+      users: [],
+      loading: true,
+    };
     this.dataSource = new ListView.DataSource({
       rowHasChanged: (row1, row2) => row1 !== row2,
       enableEmptySections: false
     });
-  }
-
-  componentDidMount() {
-  }
-
-  renderContactRow(contact, _, index) {
-    const handlePress = () => {
-
-      this.props.setActiveContact(contact, parseInt(index, 10));
-
-      this.props.navigator.push({ id: 'contact' });
-    };
-
-    return (
-      <TouchableOpacity onPress={ handlePress }>
-        <View style={ styles.contactRow }>
-    
-          <View style={ styles.contactInfo }>
-            <Text>{ contact.name }</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  }
-
-  addNewHandler() {
-    this.props.navigator.push({ id: 'new' });
-  }
-
-  handleUpdateSearch(value) {
-    this.props.updateSearch(value);
-  }
-
-  renderScene() {
-    let listViewStyles = styles.listView;
-    let noContacts = <View></View>;
-    let listView = <View></View>;
-    this.dataSource = this.dataSource.cloneWithRows(this.props.contacts);
-
-    if (!this.props.contacts.length) {
-      noContacts = <View style={ styles.noContacts }><Text>No contacts</Text></View>;
-    } else {
-      listView = <ListView
-        dataSource={ this.dataSource }
-        renderRow={ this.renderContactRow.bind(this) }
-        style={ styles.listView }
-      />;
-    }
-
-    return (
-      <View style={ styles.view }>
-        <NavigationBar
-          style={ styles.navBar }
-          title={{ title: 'Contacts' }}
-          rightButton={{ tintColor: '#000', title: '+', handler: this.addNewHandler.bind(this) }}
-        />
-        <View style={ styles.searchContainer }>
-          <TextInput
-            style={ styles.searchField }
-            placeholder={ 'Search' }
-            value={ this.props.search }
-            onChangeText={ this.handleUpdateSearch.bind(this) }
-          />
-        </View>
-        { listView }
-        { noContacts }
-      </View>
-    )
-  }
-
-  render() {
-    return (
-      <Navigator
-        renderScene={this.renderScene.bind(this)}
-      />
-    );
-  }
 }
+
+
+renderScene() {
+  let listViewStyles = styles.listView;
+  let noContacts = <View></View>;
+  let listView = <View></View>;
+  this.dataSource = this.dataSource.cloneWithRows(this.props.contacts);
+
+  if (!this.props.contacts.length) {
+    noContacts = <View style={ styles.noContacts }><Text>No contacts</Text></View>;
+  } else {
+    listView = <ListView
+      dataSource={ this.dataSource }
+      renderRow={ this.renderContactRow.bind(this) }
+      style={ styles.listView }
+    />;
+  }
+
+  return (
+    <View style={ styles.view }>
+      <NavigationBar
+        style={ styles.navBar }
+        title={{ title: 'Contacts' }}
+        rightButton={{ tintColor: '#000', title: '+', handler: this.AddNewContact.bind(this) }}
+      />
+      <View style={ styles.searchContainer }>
+        <TextInput
+          style={ styles.searchField }
+          placeholder={ 'Search' }
+          value={ this.props.search }
+          onChangeText={ this.handleUpdateSearch.bind(this) }
+        />
+      </View>
+      { listView }
+      { noContacts }
+    </View>
+  )
+}
+
+render() {
+  return (
+    <Navigator
+      renderScene={this.renderScene.bind(this)}
+    />
+  );
+}
+
+componentDidMount(){
+  this.unsubcribe=this.ref.onSnapshot((querySnapshot)=>{
+    const contacts = [];
+    
+      querySnapshot.forEach((doc) => {
+       
+        contacts.push({
+          key: doc.id, // Document ID
+          doc, // DocumentSnapshot
+          Name=doc.data.Name,
+          PhoneNumber=doc.data.PhoneNumber,
+        });
+      });
+      this.setState({
+          users:contacts,
+        loading: false,
+      });
+  });
+}
+
+
+
+
+AddNewContact=()=>{
+  this.ref.add({
+
+  }).then((data)=>{
+    console.log('New contact is added=${data}');
+      
+    this.setState({
+
+        loading: true,
+      });
+
+  }).catch((error)=>{
+    console.log('Error adding new contact = ${error}');
+    this.setState({
+      
+        loading: true,
+      });
+  });
+}
+}
+
+
 
 const styles = StyleSheet.create({
   view: {
@@ -138,42 +171,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center'
   }
-});
-
-const mapStateToProps = (state) => {
-  return {
-    contacts: state.main.contacts.filter(contact => {
-      if (!state.main.search || !state.main.search.length) {
-        return true;
-      }
-
-      return contact.name.toLowerCase().indexOf(state.main.search.toLowerCase()) >= 0;
-    }),
-    search: state.main.search
-  };
-};
-
-const mapDispatchToProps = (dispatch) => {
-  return {
-    setActiveContact: (contact, index) => {
-      dispatch({
-        type: SET_ACTIVE_CONTACT,
-        contact,
-        index
-      })
-    },
-    updateSearch: value => {
-      dispatch({
-        type: UPDATE_SEARCH,
-        value
-      })
-    }
-  };
-};
-
-const MainConnected = connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(Main);
-
-export default MainConnected
+  });
+  
