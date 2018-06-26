@@ -1,0 +1,8 @@
+/**
+ * Created by inas on 24/06/18
+ */
+export const SET_ACTIVE_CONTACT = 'SET_ACTIVE_CONTACT';
+export const UPDATE_ACTIVE_CONTACT = 'UPDATE_ACTIVE_CONTACT';
+export const ADD_CONTACT = 'ADD_CONTACT';
+export const UPDATE_CONTACT = 'UPDATE_CONTACT';
+export const UPDATE_SEARCH = 'UPDATE_SEARCH';
